@@ -1,0 +1,244 @@
+---
+title: "Densidad del aire"
+output:
+  html_document:
+    df_print: paged
+---
+```{r}
+# install.packages("data.table")
+## install.packages("ggplot2")
+# library(data.table)
+# library(ggplot2)
+library(hms) # Para tratar con tiempos en formato hora:minuto:segundos
+library(dplyr) # Para facilitar la manipulación y operaciones con dataframes
+```
+
+En este cuaderno de R se busca implementar una estimación de la densidad del aire con su incertidumbre en el laboratorio de balanzas del DMQ del LCM. Para esto se cuentan con datos de cuatro años de las condiciones ambientales del laboratorio.
+
+Deberá implementar la estimación de la densidad del aire por medio de la fórmula CIPM-2007 que se encuentra en el artículo *Revised formula for the density of moist air (CIPM-2007)* de A Picard, R S Davis, M Gläser y K Fujii del $2008$, este se puede visitar en https://www.nist.gov/system/files/documents/calibrations/CIPM-2007.pdf.
+
+Para utilizar una constante de los gases ideales más actualizada puede tomarla de https://physics.nist.gov/cgi-bin/cuu/Value?r|search_for=R, pues es el valor más actualizado de acuerdo a las definiciones nuevas de las magnitudes.
+
+Inicialmente, deberá realizar un análisis exploratorio de las magnitudes de interés: temperatura ambiental, presión atmosférica y humedad relativa.
+
+- Realice una discriminación de datos diurnos (8 am a 4 pm) y nocturnos para que el estudio sea más completo.
+- Descarte los datos atípicos.
+- Analice tendencias, si las hubiera, en las magnitudes de influencia.
+
+Seguidamente, deberá elaborar las funciones que permiten realizar los cálculos de los diversos parámetros que se utilizan en la fórmula del CIPM-2007, para lo cual deberá ser cuidadoso con las unidades, puesto que algunos utilizan la presión en Pa y otros en hPa, así como la temperatura en grados Celsius o en Kelvin.
+
+Para agregar una celda de código nueva utilice ```Ctrl+Alt+I``` y automáticamente se genera el _chunk_ para escribir código R.
+
+<span style="color:blue">**Utilice los espacios entre _chunks_ para comentar los análisis realizados, explicar las funciones utilizadas y explicar las observaciones encontradas**</span>
+
+# Carga de datos
+
+Una forma sencilla de cargar los datos es por medio de un ```for``` que itere sobre listas de directorios o archivos. Pero puede investigar formas más ágiles de hacer este procedimiento (```do.call``` y ```lapply```). La cantidad de datos ronda casi el millón de datos, por lo que se espera que una vez cargados la visualización sea un tanto lenta.
+
+```{r}
+filedir="Datos/CondicionesAmbientalesBalanzas" # directorio de datos
+años=list.dirs(path = filedir, full.names = TRUE, recursive = TRUE)[2:5] # lista de directorios
+filedir="Datos/CondicionesAmbientalesBalanzas" # directorio de datos
+años=list.dirs(path = filedir, full.names = TRUE, recursive = TRUE)[2:5] # lista de directorios
+
+for (año in 1:4) {
+  filesAnuales=list.files(path = años[año], full.names = TRUE, recursive = TRUE)
+    for (file in 1:length(filesAnuales)){
+      if (año==1 & file==1){
+        df = read.csv(file = filesAnuales[1], header=FALSE, sep="",dec=".", fill = TRUE, fileEncoding="latin1") 
+      }
+      else{
+        df_i = read.csv(file = filesAnuales[file], header=FALSE, sep="",dec=".", fill = TRUE, fileEncoding="latin1") 
+        df <- rbind(df,df_i) 
+      }
+    }
+}
+colnames(df) <- c("Fecha","Hora","Temperatura","°C","Humedad","%","Presión","hPa","Densidad","g/cm3","x","y","z")
+
+
+df$Hora <- as_hms(df$Hora)
+df = mutate(df, Horario = if_else(Hora > as_hms("7:59:59") & Hora < as_hms("16:00:00"), "Diurno", "Nocturno"))
+
+###########AGREGAR COMENTARIOS##############################
+```
+
+# Análisis exploratorio de las magnitudes de interés
+
+Aplique las técnicas más convenientes según su criterio de analista a los datos de las magnitudes de interés.
+
+```{r}
+# Utilice las herramientas que hasta el momento ha aprendido en el curso para analizar la temperatura ambiental, la presión atmosférica y la humedad relativa.
+
+```
+
+# Funciones para el cálculo de la densidad del aire
+
+Para calcular la densidad del aire utilizando la fórmula del CIPM 2007 es necesario tener sumo cuidado con las unidades. Puesto que para calcular algunos parámetros las fórmulas utilizan la temperatura en ºC o en K, la presión atmosférica en hPa o en Pa y la humedad relativa como un valor entre 0 y 1 o como un valor entre 0 y 100.
+
+Puede realizar los cambios que considere pertinentes
+
+```{r}
+Psv=function(t){
+  # Función que calcula la presión de vapor de saturación siguiendo la fórmula que se presenta en el artículo de referencia.
+  #Input:
+  #-------------
+  #t: temperatura en °C.
+    
+  #Output:
+  #-------------
+  #Psv: valor de la presión de vapor de saturación en hPa.
+  
+  A = 1.2378847 * 10^(-5) #K^-2
+  B = -1.9121316 * 10^(-2) #K^-1
+  C = 33.93711047
+  D = -6.3431645 * 10^(3) #K
+  Tk = 273.15 + t #K
+  Psv = 1 * exp(A*(Tk)^2 + B*Tk + C + D/Tk) 
+  return(Psv/100)
+}
+```
+```{r}
+f=function(t,P){
+  # Función que calcula el factor de fugasidad siguiendo la ecuación de la referencia.
+    
+  # Input:
+  # --------------
+  # P: presión en Pa.
+  # t: temperatura en °C.
+  
+  # Output:
+  # --------------
+  # f: Valor del coeficiente de fugacidad.
+
+  alpha = 1.00062
+  beta = 3.14 * 10^(-8) #Pa^(-1)
+  gamma = 5.6 * 10^(-7) #K^(-2)
+  
+  f = alpha + beta*P + gamma*(t^2)
+
+  return(f)
+}
+```
+```{r}
+xv=function(t,P,h){
+  # Función que calcula la fracción molar de vapor de agua siguiendo el artículo de referencia.
+    
+  # Input:
+  # ---------------
+  # h: humedad relativa como un valor entre 0 y 1
+  # P: presión atmosférica en Pa.
+  # t: Temperatura en °C.
+  
+  # Output:
+  # ---------------
+  # xv: Valor de la fracción molar de vapor de agua.
+  f = f(t,P)
+  Psv = Psv(t)
+  xv = (h*f*Psv)/(P)
+  return(xv)
+}
+```
+```{r}
+Z=function(t,P,h){
+  # Función que calcula el factor de compresibilidad con la ecuación del artículo de referencia.
+    
+  # Input:
+  # --------------
+  # P: Presión atmosférica en Pa.
+  # h: Humedad relativa como un valor entre 0 y 1.
+  # t: Temperatura en °C.
+  
+  # Output:
+  # ---------------
+  # Z: factor de compresibilidad.
+
+  a0 = 1.58123 * 10^(-6) #KPa^(-1)
+  a1 = -2.9331 * 10^(-8) #Pa^(-1)
+  a2 = 1.1043 * 10^(-10) #K^(-1)Pa^(-1) 
+  b0 = 5.707 * 10^(-6) #KPa^(-1)
+  b1 = -2.051 * 10^(-8) #Pa^(-1)
+  c0 = 1.9898 * 10^(-4) #KPa^(-1)
+  c1 = -2.376 * 10^(-6) #Pa^(-1)
+  d = 1.83 * 10^(-11) #K^(2)Pa^(-2)
+  e = -0.765 * 10^(-8) #K^(2)Pa^(-2)
+  
+  xv = xv(t,P,h)
+  Tk = 273.15 + t
+  Z = 1 - P*(a0 + a1*t + a2*(t^2) + (b0 + b1*t)*xv + (c0 + c1*t)*(xv^2))/(Tk) + P^2*(d + e*(xv^2))/(Tk^2)
+
+  return(Z)
+}
+```
+```{r}
+DensidadCIPM=function(t,P,h){
+  # Función que calcula la densidad del aire a partir de la ecuación del artículo de referencia.
+    
+  # Input:
+  # --------------
+  # P: Presión atmosférica en Pa.
+  # h: Humedad relativa como un valor entre 0 y 1.
+  # t: Temperatura en °C.
+  
+  # Output:
+  # --------------
+  # rho: densidad del aire en kg/m^3.
+
+  Ma = 28.96546 * 10^(-3) #kg mol^(-1)
+  Mv = 18.01528 * 10^(-3) #kg mol^(-1)
+  R = 8.314462618 #J mol^(-1) K^(-1)
+  Tk = 273.15 + t #K
+  Z = Z(t,P,h)
+  xv = xv(t,P,h)
+  
+  rho = (P*Ma)/(Z*R*Tk) * (1 - xv*(1 - (Mv/Ma)))
+  return(rho)
+}
+```
+```{r}
+# Calcule las densidades
+DensidadDf=function(t,P_hpa,h_100){
+  # Función que calcula la densidad del aire a partir de la ecuación del artículo de referencia, considerando unidades usadas en el dataframe.
+    
+  # Input:
+  # --------------
+  # P_hpa: Presión atmosférica en hPa.
+  # h_100: Humedad relativa como un valor entre 0 y 100.
+  # t: Temperatura en °C.
+  
+  # Output:
+  # --------------
+  # rho: densidad del aire en g/cm^3.
+  
+  P = P_hpa * 100 #Presión en Pa
+  h = h_100 / 100 #Humedad relativa como valor entre 0 y 1
+  rho = DensidadCIPM(t,P,h) / 1000 #Densidad del aire en g/cm^3
+  return(rho)
+}
+densidades=DensidadDf(df$Temperatura,df$Presión,df$Humedad)
+
+```
+# Análisis exploratorio de las densidades calculados
+
+A continuación puede analizar la densidad del aire, para determinar si la misma presenta datos atípicos o tendencias en el tiempo.
+
+```{r}
+#plot(densidades)
+# Puede usar este chunk o crear otro para realizar el análisis.
+```
+
+```{r}
+# Complete el código
+```
+
+```{r}
+# Complete el código
+```
+En este punto podrá haber topado con sorpresas en los datos visualizados, por lo que puede tomar decisiones con criterio y fundamento que le permitan hacer la estimación de la densidad del aire y su incertidumbre. Para efectos de esto, no se cuenta con el certificado del barotermohigrómetro, pero puede solicitarlo si le interesa realizar una estimación más completa. Recuerde que, la ecuación del CIPM-2007 tiene una incertidumbre relativa de $1\times10^{-4}$ que se puede asumir una distribución uniforme.
+
+En caso de que encuentre una distribución bimodal en los datos, se recomienda realizar un análisis con el algorimo EM para separar el modelo mixto y obtener los promedios y desviaciones estándar de ambas poblaciones.
+```{r}
+# Complete el código
+```
+```{r}
+# Complete el código
+```
