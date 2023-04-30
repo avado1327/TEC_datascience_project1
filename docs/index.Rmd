@@ -58,9 +58,6 @@ colnames(df) <- c("Fecha","Hora","Temperatura","°C","Humedad","%","Presión","h
 
 df$Hora <- as_hms(df$Hora)
 df = mutate(df, Horario = if_else(Hora > as_hms("7:59:59") & Hora < as_hms("16:00:00"), "Diurno", "Nocturno"))
-
-###########AGREGAR COMENTARIOS##############################
-#TEst#
 ```
 
 # Análisis exploratorio de las magnitudes de interés
@@ -219,10 +216,7 @@ densidades=DensidadDf(df$Temperatura,df$Presión,df$Humedad)
 ```
 Aplicación de las funciones:
 ```{r}
-func_results <- data.frame(Presión_de_Saturación = c(Psv(df$Temperatura)), Fugasidad =c(df$Temperatura,df$Presión), Fracción_Molar_VapAgua =c(df$Temperatura,df$Presión,df$Humedad), Fact_Compresibilidad = c(df$Temperatura,df$Presión,df$Humedad))
-
-```
-
+func_results <- data.frame(Presión_de_Saturación = Psv(df$Temperatura), Fugasidad = f(df$Temperatura,df$Presión), Fracción_Molar_VapAgua = xv(df$Temperatura,df$Presión,df$Humedad), Fact_Compresibilidad = Z(df$Temperatura,df$Presión,df$Humedad))
 ```
 # Análisis exploratorio de las densidades calculados
 
