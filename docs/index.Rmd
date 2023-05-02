@@ -11,7 +11,7 @@ output:
 # library(ggplot2)
 library(hms) # Para tratar con tiempos en formato hora:minuto:segundos
 library(dplyr) # Para facilitar la manipulación y operaciones con dataframes
-
+library(ggpubr)
 ```
 
 En este cuaderno de R se busca implementar una estimación de la densidad del aire con su incertidumbre en el laboratorio de balanzas del DMQ del LCM. Para esto se cuentan con datos de cuatro años de las condiciones ambientales del laboratorio.
@@ -238,22 +238,43 @@ Análisis por horario (diurno/nocturno):
 ```{r}
 df_noc <- filter(df,Horario == 'Nocturno')
 df_dia <- filter(df,Horario == 'Diurno')
-hist(df_noc$Densidad)
+ggqqplot(df_noc$Densidad, title = 'Q-Q Plot densidad en horario nocturno')
+ggqqplot(df_dia$Densidad, title = 'Q-Q Plot densidad en horario diurno')
 ```
+Los gráficos anteriores muestran como en ambos casos, existen valores que se alejan en gran medida de la muestra general. Valores mayores a 0,06 g/cm^3 que no tienen sentido en el contexto actual. Según la linea de normalidad, estos datos son los que menos se ajustan también a la normalidad de la muestra. Por tanto, los mismos pueden considerarse datos atípicos y deben ser eliminados. 
+```{r}
+df_noc1 <- filter(df_noc,Densidad<0.06)
+df_dia1 <- filter(df_dia,Densidad<0.06)
+ggqqplot(df_noc1$Densidad, title = 'Q-Q Plot densidad en horario nocturno (1er filtro)')
+ggqqplot(df_dia1$Densidad, title = 'Q-Q Plot densidad en horario diurno (1er filtro)')
+```
+Los valores menores a 0.001 también pueden descartarse ya que de igual forma se alejan de la tendencia general del resto de datos y corresponden a valores que por lo general no serían comunes de medir en el espacio experimental donde se determinaron las condiciones ambientales.
+```{r}
+df_noc2 <- filter(df_noc1,Densidad>0.001)
+df_dia2 <- filter(df_dia1,Densidad>0.001)
+ggqqplot(df_noc2$Densidad, title = 'Q-Q Plot densidad en horario nocturno (2do filtro)')
+ggqqplot(df_dia2$Densidad, title = 'Q-Q Plot densidad en horario diurno (2do filtro)')
+```
+Puede notarse también que, a pesar de la eliminación de los valores anómalos, los valores de densidad no siguen una distribución normal. Para conocer como se distribuyen estos datos, se elaborará un histograma.
+```{r}
+hist(df_noc2$Densidad,breaks = 40)
+hist(df_dia2$Densidad, breaks = 50)
+```
+```{r}
+summary(df_noc2$Densidad)
+summary(df_dia2$Densidad)
+```
+De lo anterior se puede observar que: (1) La forma de los histogramas claramente no siguen la forma de la distribución normal, tal y como se esperaba por los gráficos Q-Q, (2) El perfil que siguen las columnas de los histogramas presenta, aparentemente, dos máximos locales en aproximadamente 0.001039 g/cm^3 (moda menor) y 0.001046 g/cm^3 para el caso nocturno y para el caso diurno en 0.001037 g/cm^3 (moda menor, mas sutil que en el caso nocturno) y 0.001047 g/cm^3 (moda mayor), (3) Ambos grupos tienen medias y máximos iguales y valores muy similares para sus medianas y cuartiles, (4) Sus distribuciones no son simétricas relativo a sus medias o medianas y tienden a tener una oblicuidad (skewness) negativa, (5) La mayoría de los datos se distribuyen mayormente alrededor de las modas de las distribuciones con una kurtoris positiva.
+
+La similitud de los datos (diurnos y nocturnos) nos lleva a preguntarnos si existen diferencias significativas entre ambos grupos. Según lo que se exploró anteriormente, se podría contestar negativamente respecto a la afirmación sobre la existencia de dichas diferencias significativas, sin embargo, se realizará una prueba estadística para confirmarlo. Como sus distribución, sin lugar a duda, no es normal, se debe realizar una prueba estadística no-paramétrica, en este caso se utilizará el test de Wilcoxon (como es para dos grupos, Test U de Mann-Whitney). Se utilizarán como hipotesis:
+
+$H_{0} =$ Existen diferencias significativas entre los conjuntos de datos
+$H_{1} =$ NO existen diferencias significativas entre los conjuntos de datos
 
 ```{r}
-# Complete el código
+wilcox.test(df_noc2$Densidad,df_dia2$Densidad)
 ```
+Si se asume un nivel de significancia de $\alpha = 0.05$ entonces se decide rechazar la hipotesis nula y se concluye que no hay diferencias significativas entre la densidad medida en los horarios diurnos y nocturnos. 
+```{r}
 
-```{r}
-# Complete el código
-```
-En este punto podrá haber topado con sorpresas en los datos visualizados, por lo que puede tomar decisiones con criterio y fundamento que le permitan hacer la estimación de la densidad del aire y su incertidumbre. Para efectos de esto, no se cuenta con el certificado del barotermohigrómetro, pero puede solicitarlo si le interesa realizar una estimación más completa. Recuerde que, la ecuación del CIPM-2007 tiene una incertidumbre relativa de $1\times10^{-4}$ que se puede asumir una distribución uniforme.
-
-En caso de que encuentre una distribución bimodal en los datos, se recomienda realizar un análisis con el algorimo EM para separar el modelo mixto y obtener los promedios y desviaciones estándar de ambas poblaciones.
-```{r}
-# Complete el código
-```
-```{r}
-# Complete el código
 ```
