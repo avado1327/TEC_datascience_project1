@@ -69,6 +69,18 @@ Aplique las técnicas más convenientes según su criterio de analista a los dat
 # Utilice las herramientas que hasta el momento ha aprendido en el curso para analizar la temperatura ambiental, la presión atmosférica y la humedad relativa.
 
 ```
+# Analisis de Magnitudes por Año
+Se realizara el analisis de las magnitudes de interes por en cada año correspondiente:
+```{r}
+#Creamos las variables de los datos anuales 
+
+df_2019<- df %>% filter(grepl("9$", Fecha))
+df_2020<- df %>% filter(grepl("0$", Fecha))
+df_2021<- df %>% filter(grepl("1$", Fecha))
+df_2022<- df %>% filter(grepl("2$", Fecha))
+#> summary(subset(df_2019, select = c("Temperatura","Humedad","Presión","Densidad")))
+```
+
 
 # Funciones para el cálculo de la densidad del aire
 

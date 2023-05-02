@@ -1628,10 +1628,8 @@ display: none;
 ## install.packages(&quot;ggplot2&quot;)
 # library(data.table)
 # library(ggplot2)
-library(hms) # Para tratar con tiempos en formato hora:minuto:segundos</code></pre>
-<pre><code>## Warning: package &#39;hms&#39; was built under R version 4.2.3</code></pre>
-<pre class="r"><code>library(dplyr) # Para facilitar la manipulación y operaciones con dataframes</code></pre>
-<pre><code>## Warning: package &#39;dplyr&#39; was built under R version 4.2.3</code></pre>
+library(hms) # Para tratar con tiempos en formato hora:minuto:segundos
+library(dplyr) # Para facilitar la manipulación y operaciones con dataframes</code></pre>
 <pre><code>## 
 ## Attaching package: &#39;dplyr&#39;</code></pre>
 <pre><code>## The following objects are masked from &#39;package:stats&#39;:
@@ -1711,6 +1709,18 @@ df = mutate(df, Horario = if_else(Hora &gt; as_hms(&quot;7:59:59&quot;) &amp; Ho
 <p>Aplique las técnicas más convenientes según su criterio de analista a
 los datos de las magnitudes de interés.</p>
 <pre class="r"><code># Utilice las herramientas que hasta el momento ha aprendido en el curso para analizar la temperatura ambiental, la presión atmosférica y la humedad relativa.</code></pre>
+</div>
+<div id="analisis-de-magnitudes-por-año" class="section level1">
+<h1>Analisis de Magnitudes por Año</h1>
+<p>Se realizara el analisis de las magnitudes de interes por en cada año
+correspondiente:</p>
+<pre class="r"><code>#Creamos las variables de los datos anuales 
+
+df_2019&lt;- df %&gt;% filter(grepl(&quot;9$&quot;, Fecha))
+df_2020&lt;- df %&gt;% filter(grepl(&quot;0$&quot;, Fecha))
+df_2021&lt;- df %&gt;% filter(grepl(&quot;1$&quot;, Fecha))
+df_2022&lt;- df %&gt;% filter(grepl(&quot;2$&quot;, Fecha))
+#&gt; summary(subset(df_2019, select = c(&quot;Temperatura&quot;,&quot;Humedad&quot;,&quot;Presión&quot;,&quot;Densidad&quot;)))</code></pre>
 </div>
 <div id="funciones-para-el-cálculo-de-la-densidad-del-aire" class="section level1">
 <h1>Funciones para el cálculo de la densidad del aire</h1>
