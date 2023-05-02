@@ -11,6 +11,7 @@ output:
 # library(ggplot2)
 library(hms) # Para tratar con tiempos en formato hora:minuto:segundos
 library(dplyr) # Para facilitar la manipulación y operaciones con dataframes
+
 ```
 
 En este cuaderno de R se busca implementar una estimación de la densidad del aire con su incertidumbre en el laboratorio de balanzas del DMQ del LCM. Para esto se cuentan con datos de cuatro años de las condiciones ambientales del laboratorio.
@@ -220,11 +221,27 @@ func_results <- data.frame(Presión_de_Saturación = Psv(df$Temperatura), Fugasi
 ```
 # Análisis exploratorio de las densidades calculados
 
-A continuación puede analizar la densidad del aire, para determinar si la misma presenta datos atípicos o tendencias en el tiempo.
+Análisis por horario (diurno/nocturno): Primeramente, se hará un gráfico "boxplot" en base logaritmica para el eje y. Esto nos permitirá visualizar si existen valores que se alejan significativamente de los datos típicos de densidad.
 
 ```{r}
-#plot(densidades)
-# Puede usar este chunk o crear otro para realizar el análisis.
+df_noc <- filter(df,Horario == 'Nocturno')
+df_dia <- filter(df,Horario == 'Diurno')
+
+boxplot(df_noc$Densidad,log = "y")
+```
+
+
+```{r}
+boxplot(df_dia$Densidad, log = 'y')
+```
+Tanto en los datos Diurnos como Nocturnos, existen valores atípicos, evidenciados por la dispersión que existe en los gráficos anteriores que utilizan ejes logarítmicos. Claramente, estos valores no son representativos y son probablemente producto de un error en la medición; por ello, se decide eliminarlos ya que obstaculizan la visualización del resto de datos. Se filtrarán los datos que sean mayores (o menores) en tres desviaciones estándar de la media.
+```{r}
+sd 
+df_noc_filtered <- subset(df_noc, Densidad >= sd(df_noc$Densidad) & Densidad <= sd(df_noc$Densidad))
+
+df_dia_filtered <- filter(df_dia,Densidad<0.06)
+summary(df_noc_filtered$Densidad)
+hist(df_noc_filtered$Densidad)
 ```
 
 ```{r}
