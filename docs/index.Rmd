@@ -221,27 +221,12 @@ func_results <- data.frame(Presión_de_Saturación = Psv(df$Temperatura), Fugasi
 ```
 # Análisis exploratorio de las densidades calculados
 
-Análisis por horario (diurno/nocturno): Primeramente, se hará un gráfico "boxplot" en base logaritmica para el eje y. Esto nos permitirá visualizar si existen valores que se alejan significativamente de los datos típicos de densidad.
+Análisis por horario (diurno/nocturno): 
 
 ```{r}
 df_noc <- filter(df,Horario == 'Nocturno')
 df_dia <- filter(df,Horario == 'Diurno')
-
-boxplot(df_noc$Densidad,log = "y")
-```
-
-
-```{r}
-boxplot(df_dia$Densidad, log = 'y')
-```
-Tanto en los datos Diurnos como Nocturnos, existen valores atípicos, evidenciados por la dispersión que existe en los gráficos anteriores que utilizan ejes logarítmicos. Claramente, estos valores no son representativos y son probablemente producto de un error en la medición; por ello, se decide eliminarlos ya que obstaculizan la visualización del resto de datos. Se filtrarán los datos que sean mayores (o menores) en tres desviaciones estándar de la media.
-```{r}
-sd 
-df_noc_filtered <- subset(df_noc, Densidad >= sd(df_noc$Densidad) & Densidad <= sd(df_noc$Densidad))
-
-df_dia_filtered <- filter(df_dia,Densidad<0.06)
-summary(df_noc_filtered$Densidad)
-hist(df_noc_filtered$Densidad)
+hist(df_noc$Densidad)
 ```
 
 ```{r}
