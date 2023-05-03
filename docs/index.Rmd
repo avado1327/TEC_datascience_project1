@@ -12,6 +12,7 @@ output:
 library(hms) # Para tratar con tiempos en formato hora:minuto:segundos
 library(dplyr) # Para facilitar la manipulación y operaciones con dataframes
 library(ggpubr)
+library(plotly)
 ```
 
 En este cuaderno de R se busca implementar una estimación de la densidad del aire con su incertidumbre en el laboratorio de balanzas del DMQ del LCM. Para esto se cuentan con datos de cuatro años de las condiciones ambientales del laboratorio.
@@ -79,6 +80,321 @@ df_2020<- df %>% filter(grepl("0$", Fecha))
 df_2021<- df %>% filter(grepl("1$", Fecha))
 df_2022<- df %>% filter(grepl("2$", Fecha))
 #> summary(subset(df_2019, select = c("Temperatura","Humedad","Presión","Densidad")))
+```
+
+##Año 2019
+
+```{r}
+
+main_2019=summary(subset(df_2019, select = c("Temperatura","Humedad","Presión","Densidad")))
+tabla_2019=as.matrix(main_2019)
+print(tabla_2019)
+```
+En esta tabla podemos ver los valores estadisticos mas importantes para las variables mostradas durante el año 2019, los cuales podemos ver mas adelante mediante un boxplot para cada una de estas magnitudes.
+
+```{r}
+
+
+fig= subplot(
+  plot_ly(df_2019, y = ~Densidad, type = "box",name="Valores Densidad 2019"),
+  plot_ly(df_2019, y = ~Presión , type = "box",name="Valores Presion 2019"),
+  plot_ly(df_2019, y = ~Humedad, type = "box",name="Valores Humedad 2019"), 
+  plot_ly(df_2019, y = ~Temperatura, type = "box",name="Valores Temperatura 2019"),
+  nrows = 2,
+  margin = 0.1
+)
+
+fig
+
+
+```
+
+Ahora analizaremos el mismo comportamiento pero utilizando un histograma y ver la distribucion que estos datos toman, como estos datos nos interesa analizar mas a detalle primero se realizara un hitograma para cada magnitud. y posterior una comparativa de todos.
+
+```{r}
+
+
+fig=plot_ly(df_2019,x = df_2019$Densidad, type = "histogram", name = "Histogram") %>% 
+layout(title = "Histograma Valores Densidad 2019", xaxis = list(title = "Valores Densidad [g/cm³]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2019,x = df_2019$Presión, type = "histogram", name = "Histogram") %>% 
+layout(title = "Histograma Valores Presion 2019", xaxis = list(title = "Valores Presion [hPa]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2019,x = df_2019$Humedad, type = "histogram", name = "Histogram") %>% 
+layout(title = "Histograma Valores Humedad 2019", xaxis = list(title = "Valores Humedad [%]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2019,x = df_2019$Temperatura, type = "histogram", name = "Histogram") %>% 
+layout(title = "Histograma Valores Temperatura 2019", xaxis = list(title = "Valores Temperatura [°C]"),yaxis = list(title = "Frecuencia"))
+fig
+
+```
+
+
+```{r}
+fig= subplot(
+  plot_ly(df_2019, y = ~Densidad, type = "histogram",name="Valores Densidad 2019", orientation = "H"),
+  plot_ly(df_2019, y = ~Presión , type = "histogram",name="Valores Presion 2019", orientation = "H"),
+  plot_ly(df_2019, y = ~Humedad, type = "histogram",name="Valores Humedad 2019", orientation = "H"), 
+  plot_ly(df_2019, y = ~Temperatura, type = "histogram",name="Valores Temperatura 2019", orientation = "H"),
+  nrows = 2,
+  margin = 0.05
+) %>%
+  layout(title = "Comparativa Magnitudes 2019")
+fig
+```
+
+
+
+
+```{r}
+
+ggqqplot(df_2019$Densidad, title = 'Q-Q Plot Densidad en 2019')
+
+ggqqplot(df_2019$Temperatura, title = 'Q-Q Plot Temperatura en 2019')
+
+ggqqplot(df_2019$Presión, title = 'Q-Q Plot Presion en 2019'
+         )
+ggqqplot(df_2019$Humedad, title = 'Q-Q Plot Humedad en 2019')
+
+```
+
+## Año 2020
+
+```{r}
+main_2020=summary(subset(df_2020, select = c("Temperatura","Humedad","Presión","Densidad")))
+tabla_2020=as.matrix(main_2020)
+print(tabla_2020)
+```
+
+
+```{r}
+
+
+fig= subplot(
+  plot_ly(df_2020, y = ~Densidad, type = "box",name="Valores Densidad 2020"),
+  plot_ly(df_2020, y = ~Presión , type = "box",name="Valores Presion 2020"),
+  plot_ly(df_2020, y = ~Humedad, type = "box",name="Valores Humedad 2020"), 
+  plot_ly(df_2020, y = ~Temperatura, type = "box",name="Valores Temperatura 2020"),
+  nrows = 2,
+  margin = 0.1
+)
+
+fig
+```
+
+
+
+```{r}
+
+
+fig=plot_ly(df_2020,x = df_2020$Densidad, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Densidad 2020", xaxis = list(title = "Valores Densidad [g/cm³]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2020,x = df_2020$Presión, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Presion 2020", xaxis = list(title = "Valores Presion [hPa]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2020,x = df_2020$Humedad, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Humedad 2020", xaxis = list(title = "Valores Humedad [%]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2020,x = df_2020$Temperatura, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Temperatura 2020", xaxis = list(title = "Valores Temperatura [°C]"),yaxis = list(title = "Frecuencia"))
+fig
+
+```
+
+
+```{r}
+fig= subplot(
+  plot_ly(df_2020, y = ~Densidad, type = "histogram",name="Valores Densidad 2020", orientation = "H"),
+  plot_ly(df_2020, y = ~Presión , type = "histogram",name="Valores Presion 2020", orientation = "H"),
+  plot_ly(df_2020, y = ~Humedad, type = "histogram",name="Valores Humedad 2020", orientation = "H"), 
+  plot_ly(df_2020, y = ~Temperatura, type = "histogram",name="Valores Temperatura 2020", orientation = "H"),
+  nrows = 2,
+  margin = 0.05
+) %>%
+  layout(title = "Comparativa Magnitudes 2020")
+fig
+```
+Como se pudever en los hitogramas presentados anteriormente, se puede observar que el comportamiento de los datos, exceptuando aquellos de Presion, no poseen un comportamiento que se asemeje a una distribucion normal, esto nos permite inferir que al menos de momento, se puede presentar una distribucion bimodal, la cual es la responsable del comportamiento observado en los datos tomados durante el ano.
+
+Podemos observar esto realizando Q-Q Plots para verificar esto.
+
+```{r}
+
+
+
+ggqqplot(df_2020$Densidad, title = 'Q-Q Plot Densidad en 2020')
+
+ggqqplot(df_2020$Temperatura, title = 'Q-Q Plot Temperatura en 2020')
+
+ggqqplot(df_2020$Presión, title = 'Q-Q Plot Presion en 2020'
+)
+ggqqplot(df_2020$Humedad, title = 'Q-Q Plot Humedad en 2020')
+
+
+```
+
+## Año 2021
+
+
+```{r}
+main_2021=summary(subset(df_2021, select = c("Temperatura","Humedad","Presión","Densidad")))
+tabla_2021=as.matrix(main_2021)
+print(tabla_2021)
+```
+
+```{r}
+
+
+fig= subplot(
+  plot_ly(df_2021, y = ~Densidad, type = "box",name="Valores Densidad 2021"),
+  plot_ly(df_2021, y = ~Presión , type = "box",name="Valores Presion 2021"),
+  plot_ly(df_2021, y = ~Humedad, type = "box",name="Valores Humedad 2021"), 
+  plot_ly(df_2021, y = ~Temperatura, type = "box",name="Valores Temperatura 2021"),
+  nrows = 2,
+  margin = 0.1
+)
+
+fig
+
+
+```
+
+
+
+```{r}
+
+
+fig=plot_ly(df_2021,x = df_2021$Densidad, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Densidad 2021", xaxis = list(title = "Valores Densidad [g/cm³]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2021,x = df_2021$Presión, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Presion 2021", xaxis = list(title = "Valores Presion [hPa]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2021,x = df_2021$Humedad, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Humedad 2021", xaxis = list(title = "Valores Humedad [%]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2021,x = df_2021$Temperatura, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Temperatura 2021", xaxis = list(title = "Valores Temperatura [°C]"),yaxis = list(title = "Frecuencia"))
+fig
+
+```
+
+
+```{r}
+fig= subplot(
+  plot_ly(df_2021, y = ~Densidad, type = "histogram",name="Valores Densidad 2021", orientation = "H"),
+  plot_ly(df_2021, y = ~Presión , type = "histogram",name="Valores Presion 2021", orientation = "H"),
+  plot_ly(df_2021, y = ~Humedad, type = "histogram",name="Valores Humedad 2021", orientation = "H"), 
+  plot_ly(df_2021, y = ~Temperatura, type = "histogram",name="Valores Temperatura 2021", orientation = "H"),
+  nrows = 2,
+  margin = 0.05
+) %>%
+  layout(title = "Comparativa Magnitudes 2021")
+fig
+```
+
+
+```{r}
+
+ggqqplot(df_2021$Densidad, title = 'Q-Q Plot Densidad en 2021')
+
+ggqqplot(df_2021$Temperatura, title = 'Q-Q Plot Temperatura en 2021')
+
+ggqqplot(df_2021$Presión, title = 'Q-Q Plot Presion en 2021')
+
+ggqqplot(df_2021$Humedad, title = 'Q-Q Plot Humedad en 2021')
+
+```
+
+## Año 2022
+
+```{r}
+
+main_2022=summary(subset(df_2022, select = c("Temperatura","Humedad","Presión","Densidad")))
+tabla_2022=as.matrix(main_2022)
+print(tabla_2022)
+
+```
+
+
+```{r}
+
+
+fig= subplot(
+  plot_ly(df_2022, y = ~Densidad, type = "box",name="Valores Densidad 2022"),
+  plot_ly(df_2022, y = ~Presión , type = "box",name="Valores Presion 2022"),
+  plot_ly(df_2022, y = ~Humedad, type = "box",name="Valores Humedad 2022"), 
+  plot_ly(df_2022, y = ~Temperatura, type = "box",name="Valores Temperatura 2022"),
+  nrows = 2,
+  margin = 0.1
+)
+
+fig
+
+
+```
+
+
+
+```{r}
+
+
+fig=plot_ly(df_2022,x = df_2022$Densidad, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Densidad 2022", xaxis = list(title = "Valores Densidad [g/cm³]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2022,x = df_2022$Presión, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Presion 2022", xaxis = list(title = "Valores Presion [hPa]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2022,x = df_2022$Humedad, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Humedad 2022", xaxis = list(title = "Valores Humedad [%]"),yaxis = list(title = "Frecuencia"))
+fig
+
+fig=plot_ly(df_2022,x = df_2022$Temperatura, type = "histogram", name = "Histogram") %>% 
+  layout(title = "Histograma Valores Temperatura 2022", xaxis = list(title = "Valores Temperatura [°C]"),yaxis = list(title = "Frecuencia"))
+fig
+
+```
+
+
+```{r}
+fig= subplot(
+  plot_ly(df_2022, y = ~Densidad, type = "histogram",name="Valores Densidad 2022", orientation = "H"),
+  plot_ly(df_2022, y = ~Presión , type = "histogram",name="Valores Presion 2022", orientation = "H"),
+  plot_ly(df_2022, y = ~Humedad, type = "histogram",name="Valores Humedad 2022", orientation = "H"), 
+  plot_ly(df_2022, y = ~Temperatura, type = "histogram",name="Valores Temperatura 2022", orientation = "H"),
+  nrows = 2,
+  margin = 0.05
+) %>%
+  layout(title = "Comparativa Magnitudes 2022")
+fig
+```
+
+
+
+```{r}
+
+
+
+ggqqplot(df_2022$Densidad, title = 'Q-Q Plot Densidad en 2022')
+
+ggqqplot(df_2022$Temperatura, title = 'Q-Q Plot Temperatura en 2022')
+
+ggqqplot(df_2022$Presión, title = 'Q-Q Plot Presion en 2022'
+)
+ggqqplot(df_2022$Humedad, title = 'Q-Q Plot Humedad en 2022')
+
 ```
 
 
