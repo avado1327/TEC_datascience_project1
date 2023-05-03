@@ -238,6 +238,120 @@ plot(yModel$z[,1],yModel$z[,2], ylab = "Moda 1", xlab = "Moda 2")
 Se concluye que la distribución de la temperatura no depende del nocturno o diurno. La temperatura tiene una tendencia de mayor concentración en 17.81 °C o 19.58 °C, se tiene que analizar las condiciones del laboratorio para determinar mejor cómo separar mejor los datos para mejorar el análisis.
 
 Ahora para la presión.
+La presión está reportada en kPa o hPa. Se necesita trabajar en la misma unidad, por lo que se hace la conversión.
+
+```{r}
+df_diurno$Presión <- ifelse(df_diurno$hPa == "kPa", df_diurno$Presión * 10, df_diurno$Presión)
+df_nocturno$Presión <- ifelse(df_nocturno$hPa == "kPa", df_nocturno$Presión * 10, df_nocturno$Presión)
+```
+Se hace el gráfico de cajas
+
+```{r}
+{boxplot(df_diurno$Presión, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Presión para horario diurno")
+  axis(1)}
+
+{boxplot(df_nocturno$Presión, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Presión para horario nocturno")
+  axis(1)}
+```
+Los datos atípicos no permiten ver el rango del boxplot. Se eliminan los datos atípicos.
+
+```{r}
+#Para horario diurno
+quartiles_pd <- quantile(df_diurno$Presión, probs=c(.25, .75), na.rm = FALSE)
+IQR_pd <- IQR(df_diurno$Presión)
+
+Lower <- quartiles_pd[1] - 1.5*IQR_pd
+Upper <- quartiles_pd[2] + 1.5*IQR_pd
+
+presDOut <- subset(df_diurno$Presión, df_diurno$Presión > Lower & df_diurno$Presión < Upper)
+boxplot(presDOut, horizontal = T, xlab="Presión para horario diurno")
+
+#Para horario nocturno
+quartiles_pn <- quantile(df_nocturno$Presión, probs=c(.25, .75), na.rm = FALSE)
+IQR_pn <- IQR(df_nocturno$Presión)
+
+Lower <- quartiles_pn[1] - 1.5*IQR_pn
+Upper <- quartiles_pn[2] + 1.5*IQR_pn
+
+presNOut <- subset(df_nocturno$Presión, df_nocturno$Presión > Lower & df_nocturno$Presión < Upper)
+boxplot(presNOut, horizontal = T, xlab="Presión para horario nocturno")
+```
+
+Buscamos el resumen para ambos datos
+
+```{r}
+print("Presión diurno:")
+summary(presDOut)
+print("Presión nocturno:")
+summary(presNOut)
+```
+
+Hacemos el histograma para ver la dispersión de los datos.
+
+```{r}
+#Diurno
+mediaPD <- mean(df_diurno$Presión)
+sigmaPD <- sd(df_diurno$Presión)
+inf <- mediaPD - 2*sigmaPD
+sup <- mediaPD + 2*sigmaPD
+
+hist(presDOut, 
+     col="light gray", 
+     main="",
+     prob=T,
+     density=20, 
+     ylab="Densidad",
+     xlab="Distribución presión en horario diurno", 
+     breaks = 50)
+lines(density(presDOut, bw=0.2), col="blue", lwd=2)
+points(mediaPD,0, pch=19, col="blue", cex = 2)
+segments(inf,0, mediaPD,0, col = "blue",lwd=4)
+segments(mediaPD,0, sup,0, col = "blue",lwd=4)
+
+#Nocturno
+
+mediaPN <- mean(df_nocturno$Presión)
+sigmaPN <- sd(df_nocturno$Presión)
+inf <- mediaPN - 2*sigmaPN
+sup <- mediaPN + 2*sigmaPN
+
+hist(presNOut, 
+     col="light gray", 
+     main="",
+     prob=T,
+     density=20, 
+     ylab="Densidad",
+     xlab="Distribución presión en horario nocturno", 
+     breaks = 50)
+lines(density(presNOut, bw=0.2), col="blue", lwd=2)
+points(mediaPN,0, pch=19, col="blue", cex = 2)
+segments(inf,0, mediaPN,0, col = "blue",lwd=4)
+segments(mediaPN,0, sup,0, col = "blue",lwd=4)
+
+```
+
+Del histograma, la presión para ambos grupos parece que se distribuye normalmente.
+
+Se hace una prueba de normalidad
+
+```{r}
+qqPlot(presDOut, ylab = "Diurno. Presión (hPa)")
+qqPlot(presNOut, ylab = "Nocturno. Presión (hPa)")
+```
+Ahora se ajusta la presión a una distribución normal.
+```{r}
+fit.norm.presD <- fitdist(presDOut, distr = "norm")
+plot(fit.norm.presD)
+summary(fit.norm.presD)
+
+fit.norm.presN <- fitdist(presNOut, distr = "norm")
+plot(fit.norm.presN)
+summary(fit.norm.presD)
+```
+
+Se evidencia que no sigue una distribución normal. Sin embargo, el modelo ajustado sí lo sigue.
+
+
 
 # Analisis de Magnitudes por Año
 Se realizara el analisis de las magnitudes de interes por en cada año correspondiente:
