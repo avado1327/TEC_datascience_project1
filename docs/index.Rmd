@@ -95,17 +95,11 @@ En esta tabla podemos ver los valores estadisticos mas importantes para las vari
 
 ```{r}
 
-
-fig= subplot(
-  plot_ly(df_2019, y = ~Densidad, type = "box",name="Valores Densidad 2019"),
-  plot_ly(df_2019, y = ~Presión , type = "box",name="Valores Presion 2019"),
-  plot_ly(df_2019, y = ~Humedad, type = "box",name="Valores Humedad 2019"), 
-  plot_ly(df_2019, y = ~Temperatura, type = "box",name="Valores Temperatura 2019"),
-  nrows = 2,
-  margin = 0.1
-)
-
-fig
+par(mfrow = c(2, 2))
+boxplot(df_2019$Densidad, main = "Valores Densidad 2019")
+boxplot(df_2019$Presión, main = "Valores Presion 2019")
+boxplot(df_2019$Humedad, main = "Valores Humedad 2019")
+boxplot(df_2019$Temperatura, main = "Valores Temperatura 2019")
 
 
 ```
@@ -174,16 +168,11 @@ print(tabla_2020)
 ```{r}
 
 
-fig= subplot(
-  plot_ly(df_2020, y = ~Densidad, type = "box",name="Valores Densidad 2020"),
-  plot_ly(df_2020, y = ~Presión , type = "box",name="Valores Presion 2020"),
-  plot_ly(df_2020, y = ~Humedad, type = "box",name="Valores Humedad 2020"), 
-  plot_ly(df_2020, y = ~Temperatura, type = "box",name="Valores Temperatura 2020"),
-  nrows = 2,
-  margin = 0.1
-)
-
-fig
+par(mfrow = c(2, 2))
+boxplot(df_2020$Densidad, main = "Valores Densidad 2020")
+boxplot(df_2020$Presión, main = "Valores Presion 2020")
+boxplot(df_2020$Humedad, main = "Valores Humedad 2020")
+boxplot(df_2020$Temperatura, main = "Valores Temperatura 2020")
 ```
 
 
@@ -252,18 +241,11 @@ print(tabla_2021)
 
 ```{r}
 
-
-fig= subplot(
-  plot_ly(df_2021, y = ~Densidad, type = "box",name="Valores Densidad 2021"),
-  plot_ly(df_2021, y = ~Presión , type = "box",name="Valores Presion 2021"),
-  plot_ly(df_2021, y = ~Humedad, type = "box",name="Valores Humedad 2021"), 
-  plot_ly(df_2021, y = ~Temperatura, type = "box",name="Valores Temperatura 2021"),
-  nrows = 2,
-  margin = 0.1
-)
-
-fig
-
+par(mfrow = c(2, 2))
+boxplot(df_2021$Densidad, main = "Valores Densidad 2021")
+boxplot(df_2021$Presión, main = "Valores Presion 2021")
+boxplot(df_2021$Humedad, main = "Valores Humedad 2021")
+boxplot(df_2021$Temperatura, main = "Valores Temperatura 2021")
 
 ```
 
@@ -330,17 +312,11 @@ print(tabla_2022)
 
 ```{r}
 
-
-fig= subplot(
-  plot_ly(df_2022, y = ~Densidad, type = "box",name="Valores Densidad 2022"),
-  plot_ly(df_2022, y = ~Presión , type = "box",name="Valores Presion 2022"),
-  plot_ly(df_2022, y = ~Humedad, type = "box",name="Valores Humedad 2022"), 
-  plot_ly(df_2022, y = ~Temperatura, type = "box",name="Valores Temperatura 2022"),
-  nrows = 2,
-  margin = 0.1
-)
-
-fig
+par(mfrow = c(2, 2))
+boxplot(df_2022$Densidad, main = "Valores Densidad 2022")
+boxplot(df_2022$Presión, main = "Valores Presion 2022")
+boxplot(df_2022$Humedad, main = "Valores Humedad 2022")
+boxplot(df_2022$Temperatura, main = "Valores Temperatura 2022")
 
 
 ```
