@@ -340,13 +340,13 @@ qqPlot(presNOut, ylab = "Nocturno. Presión (hPa)")
 ```
 Ahora se ajusta la presión a una distribución normal.
 ```{r}
-fit.norm.presD <- fitdist(presDOut, distr = "norm")
-plot(fit.norm.presD)
-summary(fit.norm.presD)
+#fit.norm.presD <- fitdist(presDOut, distr = "norm")
+#plot(fit.norm.presD)
+#summary(fit.norm.presD)
 
-fit.norm.presN <- fitdist(presNOut, distr = "norm")
-plot(fit.norm.presN)
-summary(fit.norm.presD)
+#fit.norm.presN <- fitdist(presNOut, distr = "norm")
+#plot(fit.norm.presN)
+#summary(fit.norm.presD)
 ```
 
 Se evidencia que no sigue una distribución normal. Sin embargo, el modelo ajustado sí lo sigue.
@@ -852,6 +852,63 @@ $H_{1} =$ NO existen diferencias significativas entre los conjuntos de datos
 wilcox.test(df_noc1$Densidad,df_dia1$Densidad)
 ```
 Si se asume un nivel de significancia de $\alpha = 0.05$ entonces se decide rechazar la hipotesis nula y se concluye que no hay diferencias significativas entre la densidad medida en los horarios diurnos y nocturnos. 
+
+
+Análisis por año
+
+```{r}
+df_2019<- df %>% filter(grepl("9$", Fecha))
+df_2020<- df %>% filter(grepl("0$", Fecha))
+df_2021<- df %>% filter(grepl("1$", Fecha))
+df_2022<- df %>% filter(grepl("2$", Fecha))
+```
+
+
+```{r}
+df_2019 <- na.omit(df_2019)
+df_2020 <- na.omit(df_2020)
+df_2021 <- na.omit(df_2021)
+df_2022 <- na.omit(df_2022)
+```
+
+
+```{r}
+ggqqplot(df_2019$Dens_calc, title = 'Q-Q Plot densidad en 2019')
+ggqqplot(df_2020$Dens_calc, title = 'Q-Q Plot densidad en 2020')
+ggqqplot(df_2021$Dens_calc, title = 'Q-Q Plot densidad en 2021')
+ggqqplot(df_2022$Dens_calc, title = 'Q-Q Plot densidad en 2022')
+```
+```{r}
+df_2020 <- filter(df_2020,Dens_calc>0.001)
+ggqqplot(df_2020$Densidad, title = 'Q-Q Plot densidad en 2020 (1er filtro)')
+df_2021 <- filter(df_2021,Dens_calc>0.001)
+ggqqplot(df_2021$Densidad, title = 'Q-Q Plot densidad en 2021 (1er filtro)')
+df_2022 <- filter(df_2022,Dens_calc>0.001)
+ggqqplot(df_2022$Densidad, title = 'Q-Q Plot densidad en 2022 (1er filtro)')
+```
+
+
+```{r}
+grubbs.test(df_2019$Dens_calc, type = 11)
+grubbs.test(df_2020$Dens_calc, type = 11)
+grubbs.test(df_2021$Dens_calc, type = 11)
+grubbs.test(df_2022$Dens_calc, type = 11)
+```
+
+```{r}
+hist(df_2019$Dens_calc,breaks = 40, xlab = 'Densidad calculada (2019) [g/cm^3]')
+hist(df_2020$Dens_calc,breaks = 40, xlab = 'Densidad calculada (2020) [g/cm^3]')
+hist(df_2021$Dens_calc,breaks = 40, xlab = 'Densidad calculada (2021) [g/cm^3]')
+hist(df_2022$Dens_calc,breaks = 40, xlab = 'Densidad calculada (2022) [g/cm^3]')
+```
+```{r}
+summary(df_2019$Dens_calc)
+summary(df_2020$Dens_calc)
+summary(df_2021$Dens_calc)
+summary(df_2022$Dens_calc)
+```
+
 ```{r}
 
 ```
+
