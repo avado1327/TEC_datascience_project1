@@ -14,6 +14,8 @@ library(dplyr) # Para facilitar la manipulación y operaciones con dataframes
 library(ggpubr)
 library(plotly)
 library(outliers)
+library(car)
+library(mclust)
 ```
 
 En este cuaderno de R se busca implementar una estimación de la densidad del aire con su incertidumbre en el laboratorio de balanzas del DMQ del LCM. Para esto se cuentan con datos de cuatro años de las condiciones ambientales del laboratorio.
@@ -71,6 +73,172 @@ Aplique las técnicas más convenientes según su criterio de analista a los dat
 # Utilice las herramientas que hasta el momento ha aprendido en el curso para analizar la temperatura ambiental, la presión atmosférica y la humedad relativa.
 
 ```
+
+Primero se separan los datos diurnos y nocturnos.
+
+```{r}
+df_diurno <- subset(df, Horario == "Diurno")
+df_nocturno <- subset(df, Horario == "Nocturno")
+```
+
+Para el análisis de temperatura. Primero se realiza el gráfico de cajas.
+
+```{r}
+
+{boxplot(df_diurno$Temperatura, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Temperatura ambiente para horario diurno")
+  axis(1)}
+
+{boxplot(df_nocturno$Temperatura, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Temperatura ambiente para horario nocturno")
+  axis(1)}
+```
+
+En ambos gráficos se observan 4 o 5 datos alejados del límite inferior del boxplot y algunos por encima del límite superior. Se trata de datos atípicos, por lo tanto se eliminan.
+
+```{r}
+#Para horario diurno
+quartiles_td <- quantile(df_diurno$Temperatura, probs=c(.25, .75), na.rm = FALSE)
+IQR_td <- IQR(df_diurno$Temperatura)
+
+Lower <- quartiles_td[1] - 1.5*IQR_td
+Upper <- quartiles_td[2] + 1.5*IQR_td
+
+tempDOut <- subset(df_diurno$Temperatura, df_diurno$Temperatura > Lower & df_diurno$Temperatura < Upper)
+boxplot(tempDOut, horizontal = T)
+
+#Para horario nocturno
+quartiles_tn <- quantile(df_nocturno$Temperatura, probs=c(.25, .75), na.rm = FALSE)
+IQR_tn <- IQR(df_nocturno$Temperatura)
+
+Lower <- quartiles_tn[1] - 1.5*IQR_tn
+Upper <- quartiles_tn[2] + 1.5*IQR_tn
+
+tempNOut <- subset(df_nocturno$Temperatura, df_nocturno$Temperatura > Lower & df_nocturno$Temperatura < Upper)
+boxplot(tempNOut, horizontal = T)
+
+```
+Se presentan el resumen, medidas de ubicación y medida de dispersión de los datos.
+
+```{r}
+#Diurno
+summary(tempDOut)
+#Nocturno
+summary(tempNOut)
+
+
+```
+Se observa que en ambos, la mediana es menos a la media, lo que indica que los datos tienen asimetría hacia la derecha.
+
+```{r}
+par(mfrow = c(1, 2))
+qqPlot(tempDOut, ylab="Temperatura en horario diurno")
+qqPlot(tempNOut, ylab="Temperatura en horario nocturno")
+```
+Por lo tanto, se descarta la normalidad de los datos para ambas distribuciones.
+
+Se grafica el histograma para ver la distribución de los datos.
+
+```{r}
+ref_value <- mean(df$Temperatura)
+sigma <- sd(df$Temperatura)
+inf <- ref_value - 2*sigma
+sup <- ref_value + 2*sigma
+
+hist(tempDOut, 
+     col="light gray", 
+     main="",
+     prob=T,
+     density=20, 
+     xlab="Distribución temperatura en horario diurno", 
+     breaks = 100, 
+     xlim = c(16.5, 22.5))
+lines(density(tempDOut, bw=0.05), col="blue", lwd=2)
+points(ref_value,0, pch=19, col="blue", cex = 2)
+segments(inf,0, ref_value,0, col = "blue",lwd=4)
+segments(ref_value,0, sup,0, col = "blue",lwd=4)
+
+hist(tempNOut, 
+     col="light gray", 
+     main="",
+     prob=T,
+     density=20, 
+     xlab="Distribución temperatura en horario nocturno", 
+     breaks = 100, 
+     xlim = c(16.5, 22.5))
+lines(density(tempNOut, bw=0.05), col="blue", lwd=2)
+points(ref_value,0, pch=19, col="blue", cex = 2)
+segments(inf,0, ref_value,0, col = "blue",lwd=4)
+segments(ref_value,0, sup,0, col = "blue",lwd=4)
+```
+De los histogramas se concluyen dos cosas. La primera es que el horario no influye en la distribución, ya que gráficamente esta se ve igual para ambos horarios. La segunda es que parece que sigue una distribución bimodal. A continuación se va a estudiar las mediciones de dispersión para un modelo mixto.
+
+```{r}
+library(mixtools)
+#Diurno
+print("Diurno")
+set.seed(2) 
+tempDOut_bi <- normalmixEM(tempDOut, k = 2)
+summary(tempDOut_bi)
+#Nocturno
+print("Nocturno")
+tempNOut_bi <- normalmixEM(tempDOut, k = 2)
+summary(tempNOut_bi)
+```
+
+Los estadísticos muestran que no hay diferencia significativa entre los horarios diurno y nocturno, por lo que se van a tratar como un mismo conjunto de datos a analizar.
+
+Al estudiar el modelo mixto, con 2 modas, se tiene que una se ubica cerca de 17.81 °C con desviación estándar de 0.34 °C, mientras que la segunda media está cerca de 19.58 °C con desviación estándar de 0.82 °C proximadamente. Esta función no dice si ambas poblaciones se distribuyen normalmente. Gráficamente se concluye que no, porque la cola derecha tiene mucha frecuencia.
+
+Ahora se grafica la ubicación de la dispersión para ambos grupos.
+
+```{r}
+#Solo se analiza un horario, ya que se determinó que el horario no afecta la distribución de los datos
+mu.1<- tempDOut_bi$mu[[1]]
+mu.2<- tempDOut_bi$mu[[2]]
+
+sigma.1<- tempDOut_bi$sigma[[1]]
+sigma.2<- tempDOut_bi$sigma[[2]]
+
+IC.inf.1 <- mu.1+sigma.1
+IC.sup.1 <- mu.1-sigma.1
+IC.inf.2 <- mu.2+sigma.2
+IC.sup.2 <- mu.2-sigma.2
+
+hist(tempDOut, prob=T,density=20, ylab = "Densidad", xlab = "Temperatura ambiente (°C)", main = "")
+lines(density(tempDOut), col="blue", lwd=2)
+points(mu.1,0, pch=19, col="blue", cex = 2)
+points(mu.2,0, pch=19, col="blue", cex = 2)
+segments(IC.inf.1,0, mu.1,0, col = "blue",lwd=4)
+segments(mu.1,0, IC.sup.1,0, col = "blue",lwd=4)
+segments(IC.inf.2,0, mu.2,0, col = "blue",lwd=4)
+segments(mu.2,0, IC.sup.2,0, col = "blue",lwd=4)
+
+```
+
+Para estudiar si ambas modas se distribuyen de forma normal. No se puede utilizar el test de shapiro, ya que tiene más de 5000 datos. Tampoco el de Alderson- Darling, este porque no carga. Se prueba gráficamente con la función mclustBIC.
+
+```{r}
+library(mclust)
+yBIC = mclustBIC(tempDOut, modelNames="V")
+yModel = mclustModel(tempDOut, yBIC)
+yModel$parameters$mean
+yModel$parameters$variance$sigmasq
+plot(yModel$z[,1],yModel$z[,2], ylab = "Moda 1", xlab = "Moda 2")
+```
+
+Se observa que no se ajusta a un modelo normal. De igual manera con el horario nocturno
+
+```{r}
+yBIC = mclustBIC(tempNOut, modelNames="V")
+yModel = mclustModel(tempNOut, yBIC)
+yModel$parameters$mean
+yModel$parameters$variance$sigmasq
+plot(yModel$z[,1],yModel$z[,2], ylab = "Moda 1", xlab = "Moda 2")
+```
+
+Se concluye que la distribución de la temperatura no depende del nocturno o diurno. La temperatura tiene una tendencia de mayor concentración en 17.81 °C o 19.58 °C, se tiene que analizar las condiciones del laboratorio para determinar mejor cómo separar mejor los datos para mejorar el análisis.
+
+Ahora para la presión.
+
 # Analisis de Magnitudes por Año
 Se realizara el analisis de las magnitudes de interes por en cada año correspondiente:
 ```{r}
