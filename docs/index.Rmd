@@ -16,6 +16,8 @@ library(plotly)
 library(outliers)
 library(car)
 library(mclust)
+library(moments)
+library(fitdistrplus)
 ```
 
 En este cuaderno de R se busca implementar una estimación de la densidad del aire con su incertidumbre en el laboratorio de balanzas del DMQ del LCM. Para esto se cuentan con datos de cuatro años de las condiciones ambientales del laboratorio.
@@ -103,7 +105,7 @@ Lower <- quartiles_td[1] - 1.5*IQR_td
 Upper <- quartiles_td[2] + 1.5*IQR_td
 
 tempDOut <- subset(df_diurno$Temperatura, df_diurno$Temperatura > Lower & df_diurno$Temperatura < Upper)
-boxplot(tempDOut, horizontal = T)
+boxplot(tempDOut, horizontal = T, xlab = "Temperatura en horario diurno")
 
 #Para horario nocturno
 quartiles_tn <- quantile(df_nocturno$Temperatura, probs=c(.25, .75), na.rm = FALSE)
@@ -113,7 +115,7 @@ Lower <- quartiles_tn[1] - 1.5*IQR_tn
 Upper <- quartiles_tn[2] + 1.5*IQR_tn
 
 tempNOut <- subset(df_nocturno$Temperatura, df_nocturno$Temperatura > Lower & df_nocturno$Temperatura < Upper)
-boxplot(tempNOut, horizontal = T)
+boxplot(tempNOut, horizontal = T, xlab = "Temperatura en horario nocturno")
 
 ```
 Se presentan el resumen, medidas de ubicación y medida de dispersión de los datos.
@@ -126,7 +128,7 @@ summary(tempNOut)
 
 
 ```
-Se observa que en ambos, la mediana es menos a la media, lo que indica que los datos tienen asimetría hacia la derecha.
+Se observa que en ambos, la mediana es menos a la media, lo que indica que los datos tienen asimetría hacia la derecha. Ambos conjuntos de datos son muy similares en sus mediciones de ubicación.
 
 ```{r}
 par(mfrow = c(1, 2))
@@ -169,7 +171,7 @@ points(ref_value,0, pch=19, col="blue", cex = 2)
 segments(inf,0, ref_value,0, col = "blue",lwd=4)
 segments(ref_value,0, sup,0, col = "blue",lwd=4)
 ```
-De los histogramas se concluyen dos cosas. La primera es que el horario no influye en la distribución, ya que gráficamente esta se ve igual para ambos horarios. La segunda es que parece que sigue una distribución bimodal. A continuación se va a estudiar las mediciones de dispersión para un modelo mixto.
+De los histogramas se concluyen dos cosas. La primera es que el horario no influye mucho en la distribución, ya que gráficamente esta se ve muy similar para ambos horarios. La segunda es que parece que sigue una distribución bimodal. A continuación se va a estudiar las mediciones de dispersión para un modelo mixto.
 
 ```{r}
 library(mixtools)
@@ -184,7 +186,7 @@ tempNOut_bi <- normalmixEM(tempDOut, k = 2)
 summary(tempNOut_bi)
 ```
 
-Los estadísticos muestran que no hay diferencia significativa entre los horarios diurno y nocturno, por lo que se van a tratar como un mismo conjunto de datos a analizar.
+Los estadísticos muestran que no hay diferencia amplia entre los horarios diurno y nocturno, por lo que se puede analizar un solo conjunto de datos.
 
 Al estudiar el modelo mixto, con 2 modas, se tiene que una se ubica cerca de 17.81 °C con desviación estándar de 0.34 °C, mientras que la segunda media está cerca de 19.58 °C con desviación estándar de 0.82 °C proximadamente. Esta función no dice si ambas poblaciones se distribuyen normalmente. Gráficamente se concluye que no, porque la cola derecha tiene mucha frecuencia.
 
@@ -332,6 +334,34 @@ segments(mediaPN,0, sup,0, col = "blue",lwd=4)
 
 Del histograma, la presión para ambos grupos parece que se distribuye normalmente.
 
+Algunas medidas de dispersión: varianza, desviación estándar, error estándar, coeficiente de variación, asimetría, kurtosis; respectivamente.
+
+```{r}
+print("Diurno:")
+var(presDOut) #Varianza
+sd(presDOut) #Desviación estándar
+error_estandar <- sd(presDOut)/sqrt(length((presDOut)))
+error_estandar #Calcula el error estándar
+cv <- sd(presDOut)/mean(presDOut) *100
+cv #Coeficiente de variación.
+skewness(presDOut) #Asimetría
+kurtosis(presDOut) #kurtosis
+
+
+
+print("Nocturno:")
+var(presNOut) #Varianza
+sd(presNOut) #Desviación estándar
+error_estandar <- sd(presNOut)/sqrt(length((presNOut)))
+error_estandar #Calcula el error estándar
+cv <- sd(presNOut)/mean(presNOut) *100
+cv #Coeficiente de variación.
+skewness(presNOut) #Asimetría
+kurtosis(presNOut) #kurtosis
+
+```
+
+
 Se hace una prueba de normalidad
 
 ```{r}
@@ -351,6 +381,144 @@ Ahora se ajusta la presión a una distribución normal.
 
 Se evidencia que no sigue una distribución normal. Sin embargo, el modelo ajustado sí lo sigue.
 
+Para el análisis de la humedad relativa. Primero se hace el gráfico de cajas.
+
+```{r}
+{boxplot(df_diurno$Humedad, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Humedad relativa para horario diurno")
+  axis(1)}
+
+{boxplot(df_nocturno$Humedad, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Humedad relativa para horario nocturno")
+  axis(1)}
+```
+
+Se descartan los valores atípicos.
+
+```{r}
+#Para horario diurno
+quartiles_hd <- quantile(df_diurno$Humedad, probs=c(.25, .75), na.rm = FALSE)
+IQR_hd <- IQR(df_diurno$Humedad)
+
+Lower <- quartiles_hd[1] - 1.5*IQR_hd
+Upper <- quartiles_hd[2] + 1.5*IQR_hd
+
+humDOut <- subset(df_diurno$Humedad, df_diurno$Humedad > Lower & df_diurno$Humedad < Upper)
+boxplot(humDOut, horizontal = T, xlab="Humedad relativa para horario diurno")
+
+#Para horario nocturno
+quartiles_hn <- quantile(df_nocturno$Humedad, probs=c(.25, .75), na.rm = FALSE)
+IQR_hn <- IQR(df_nocturno$Humedad)
+
+Lower <- quartiles_hn[1] - 1.5*IQR_hn
+Upper <- quartiles_hn[2] + 1.5*IQR_hn
+
+humNOut <- subset(df_nocturno$Humedad, df_nocturno$Humedad > Lower & df_nocturno$Humedad < Upper)
+boxplot(humNOut, horizontal = T, xlab="Humedad relativa para horario nocturno")
+```
+
+Parece que los datos están centrados. Viendo algunas medidas de ubicación:
+
+```{r}
+#Diurno
+print("Resumen diurno")
+summary(humDOut)
+
+#NOcturno
+print("Resumen nocturno")
+summary(humNOut)
+```
+
+
+Se hace un histograma para ver la dispersión de la humedad relativa
+
+```{r}
+#Diurno
+mediaHD <- mean(df_diurno$Humedad)
+sigmaHD <- sd(df_diurno$Humedad)
+inf <- mediaHD - 2*sigmaHD
+sup <- mediaHD + 2*sigmaHD
+
+hist(humDOut, 
+     col="light gray", 
+     main="",
+     prob=T,
+     density=20, 
+     ylab="Densidad",
+     xlab="Distribución de la humedad relativa en horario diurno", 
+     breaks = 50)
+lines(density(humDOut, bw=0.2), col="blue", lwd=2)
+points(mediaHD,0, pch=19, col="blue", cex = 2)
+segments(inf,0, mediaHD,0, col = "blue",lwd=4)
+segments(mediaHD,0, sup,0, col = "blue",lwd=4)
+
+#Nocturno
+
+mediaHN <- mean(df_nocturno$Humedad)
+sigmaHN <- sd(df_nocturno$Humedad)
+inf <- mediaHN - 2*sigmaHN
+sup <- mediaHN + 2*sigmaHN
+
+hist(humNOut, 
+     col="light gray", 
+     main="",
+     prob=T,
+     density=20, 
+     ylab="Densidad",
+     xlab="Distribución de la humedad relativa en horario nocturno", 
+     breaks = 50)
+lines(density(humNOut, bw=0.2), col="blue", lwd=2)
+points(mediaHN,0, pch=19, col="blue", cex = 2)
+segments(inf,0, mediaHN,0, col = "blue",lwd=4)
+segments(mediaHN,0, sup,0, col = "blue",lwd=4)
+
+```
+
+Por encima parece que sigue la distribución de una campana.Visualmente no se evidencia asimetría.
+
+Algunas medidas de dispersión: varianza, desviación estándar, error estándar, coeficiente de variación, asimetría, kurtosis; respectivamente.
+
+```{r}
+print("Diurno:")
+var(humDOut) #Varianza
+sd(humDOut) #Desviación estándar
+error_estandar <- sd(humDOut)/sqrt(length((humDOut)))
+error_estandar #Calcula el error estándar
+cv <- sd(humDOut)/mean(humDOut) *100
+cv #Coeficiente de variación.
+skewness(humDOut) #Asimetría
+kurtosis(humDOut) #kurtosis
+
+
+
+print("Nocturno:")
+var(humNOut) #Varianza
+sd(humNOut) #Desviación estándar
+error_estandar <- sd(humNOut)/sqrt(length((humNOut)))
+error_estandar #Calcula el error estándar
+cv <- sd(humNOut)/mean(humNOut) *100
+cv #Coeficiente de variación.
+skewness(humNOut) #Asimetría
+kurtosis(humNOut) #kurtosis
+```
+
+Ahora se hace una prueba de normalidad
+
+```{r}
+qqPlot(presDOut, ylab = "Diurno. Humedad (%)")
+qqPlot(presNOut, ylab = "Nocturno. Humedad (%)")
+```
+
+Se evidencia que la humedad no sigue una distribución normal. Ahora se utiliza el modelo de ajuste lognormal.
+
+
+```{r}
+fit.lnorm <- fitdist(humDOut, distr = "lnorm", method = "mle")
+plot(fit.lnorm)
+
+fit.lnorm <- fitdist(humNOut, distr = "lnorm", method = "mle")
+plot(fit.lnorm)
+```
+
+Vemos que solo el Q-Q pLot no coincide con el teórico.
 
 
 # Analisis de Magnitudes por Año
