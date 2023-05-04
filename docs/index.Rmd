@@ -1115,4 +1115,33 @@ summary(df_2022$Dens_calc)
 ```{r}
 
 ```
+Para calcular la incertidumbre de la densidad se debe tener en cuenta todas las variables que forman parte del calculo, tenemos la presion , la humedad realtiva y la temperatura, ademas de los las masas molares utilizadas en  la formula CIPM-2007, po lo que se tiene un total de 9 incertidumbres aparte de la presion , temperatura y humedad que se deben calcular, La incertidumbre por repeticion se considera despreciable por la cantidad de datos con las que se trabaja.
+
+El documeno nos da la contribucion de los factores relativos  para la incertidumbre, realizamos una suma cuadratica y le sacamos la raiz para optener la incertidumbre relativa
+```{r}
+Contribucion_r <- c(1.7,5.4,2.2,0.2,0.0,1.2,8.3,8.3,8.3,15)
+incertidumbre_relativa <- sqrt(sum(Contribucion_r^2))
+print(incertidumbre_relativa )
+```
+Cabe destacar que esto esta en el orden de los micrómetros por lo tanto la incertidumbre de la densidad tendria un valor de 22 (10^-6 kg/m^3)
+
+Una ves con la incertidumbre relativa se calcula la incertidumbre estandar multiplicando el mejor estimador de la densidad por la incertidumbre relativa, para este caso tenemos una incertidumbre de dia y otra de noche entonces se procede a calcular el mejor estimador de ambas
+```{r}
+mejor_estimador_noche=mean(df_noc1$Densidad)
+mejor_estimador_dia=mean(df_dia1$Densidad)
+```
+Se multiplica el mejor estimador por la incertidumbre relativa para obtener la incertidumbre estandar  de cada uno de los tipos
+```{r}
+u_estandar_dia=incertidumbre_relativa*mejor_estimador_dia
+u_estandar_noche=incertidumbre_relativa*mejor_estimador_noche
+
+```
+Incertidumbre eesantar para la densidad diurna
+```{r}
+print(u_estandar_dia)
+```
+Incertidumbre estandar para la densidad nocturna
+```{r}
+print(u_estandar_noche)
+```
 
