@@ -17,7 +17,7 @@ library(outliers)
 library(car)
 library(mclust)
 library(moments)
-library(fitdistrplus)
+library(fitdistrplus) 
 ```
 
 En este cuaderno de R se busca implementar una estimación de la densidad del aire con su incertidumbre en el laboratorio de balanzas del DMQ del LCM. Para esto se cuentan con datos de cuatro años de las condiciones ambientales del laboratorio.
@@ -122,9 +122,29 @@ Se presentan el resumen, medidas de ubicación y medida de dispersión de los da
 
 ```{r}
 #Diurno
+print("Diurno:")
 summary(tempDOut)
+var(tempDOut) #Varianza
+sd(tempDOut) #Desviación estándar
+error_estandar <- sd(tempDOut)/sqrt(length((tempDOut)))
+error_estandar #Calcula el error estándar
+cv <- sd(tempDOut)/mean(tempDOut) *100
+cv #Coeficiente de variación.
+skewness(tempDOut) #Asimetría
+kurtosis(tempDOut) #kurtosis
+
 #Nocturno
+
+print("Nocturno:")
 summary(tempNOut)
+var(tempNOut) #Varianza
+sd(tempNOut) #Desviación estándar
+error_estandar <- sd(tempNOut)/sqrt(length((tempNOut)))
+error_estandar #Calcula el error estándar
+cv <- sd(tempNOut)/mean(tempNOut) *100
+cv #Coeficiente de variación.
+skewness(tempNOut) #Asimetría
+kurtosis(tempNOut) #kurtosis
 
 
 ```
@@ -266,7 +286,7 @@ Lower <- quartiles_pd[1] - 1.5*IQR_pd
 Upper <- quartiles_pd[2] + 1.5*IQR_pd
 
 presDOut <- subset(df_diurno$Presión, df_diurno$Presión > Lower & df_diurno$Presión < Upper)
-boxplot(presDOut, horizontal = T, xlab="Presión para horario diurno")
+boxplot(presDOut, horizontal = T, xlab="Presión para horario diurno (hPa)")
 
 #Para horario nocturno
 quartiles_pn <- quantile(df_nocturno$Presión, probs=c(.25, .75), na.rm = FALSE)
@@ -276,7 +296,7 @@ Lower <- quartiles_pn[1] - 1.5*IQR_pn
 Upper <- quartiles_pn[2] + 1.5*IQR_pn
 
 presNOut <- subset(df_nocturno$Presión, df_nocturno$Presión > Lower & df_nocturno$Presión < Upper)
-boxplot(presNOut, horizontal = T, xlab="Presión para horario nocturno")
+boxplot(presNOut, horizontal = T, xlab="Presión para horario nocturno (hPa)")
 ```
 
 Buscamos el resumen para ambos datos
@@ -370,13 +390,13 @@ qqPlot(presNOut, ylab = "Nocturno. Presión (hPa)")
 ```
 Ahora se ajusta la presión a una distribución normal.
 ```{r}
-#fit.norm.presD <- fitdist(presDOut, distr = "norm")
-#plot(fit.norm.presD)
-#summary(fit.norm.presD)
+fit.norm.presD <- fitdist(presDOut, distr = "norm")
+plot(fit.norm.presD)
+summary(fit.norm.presD)
 
-#fit.norm.presN <- fitdist(presNOut, distr = "norm")
-#plot(fit.norm.presN)
-#summary(fit.norm.presD)
+fit.norm.presN <- fitdist(presNOut, distr = "norm")
+plot(fit.norm.presN)
+summary(fit.norm.presD)
 ```
 
 Se evidencia que no sigue una distribución normal. Sin embargo, el modelo ajustado sí lo sigue.
@@ -384,10 +404,10 @@ Se evidencia que no sigue una distribución normal. Sin embargo, el modelo ajust
 Para el análisis de la humedad relativa. Primero se hace el gráfico de cajas.
 
 ```{r}
-{boxplot(df_diurno$Humedad, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Humedad relativa para horario diurno")
+{boxplot(df_diurno$Humedad, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Humedad relativa para horario diurno (%)")
   axis(1)}
 
-{boxplot(df_nocturno$Humedad, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Humedad relativa para horario nocturno")
+{boxplot(df_nocturno$Humedad, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Humedad relativa para horario nocturno (%)")
   axis(1)}
 ```
 
@@ -402,7 +422,7 @@ Lower <- quartiles_hd[1] - 1.5*IQR_hd
 Upper <- quartiles_hd[2] + 1.5*IQR_hd
 
 humDOut <- subset(df_diurno$Humedad, df_diurno$Humedad > Lower & df_diurno$Humedad < Upper)
-boxplot(humDOut, horizontal = T, xlab="Humedad relativa para horario diurno")
+boxplot(humDOut, horizontal = T, xlab="Humedad relativa para horario diurno (%)")
 
 #Para horario nocturno
 quartiles_hn <- quantile(df_nocturno$Humedad, probs=c(.25, .75), na.rm = FALSE)
@@ -412,7 +432,7 @@ Lower <- quartiles_hn[1] - 1.5*IQR_hn
 Upper <- quartiles_hn[2] + 1.5*IQR_hn
 
 humNOut <- subset(df_nocturno$Humedad, df_nocturno$Humedad > Lower & df_nocturno$Humedad < Upper)
-boxplot(humNOut, horizontal = T, xlab="Humedad relativa para horario nocturno")
+boxplot(humNOut, horizontal = T, xlab="Humedad relativa para horario nocturno (%)")
 ```
 
 Parece que los datos están centrados. Viendo algunas medidas de ubicación:
@@ -503,8 +523,8 @@ kurtosis(humNOut) #kurtosis
 Ahora se hace una prueba de normalidad
 
 ```{r}
-qqPlot(presDOut, ylab = "Diurno. Humedad (%)")
-qqPlot(presNOut, ylab = "Nocturno. Humedad (%)")
+qqPlot(humDOut, ylab = "Diurno. Humedad (%)")
+qqPlot(humNOut, ylab = "Nocturno. Humedad (%)")
 ```
 
 Se evidencia que la humedad no sigue una distribución normal. Ahora se utiliza el modelo de ajuste lognormal.
