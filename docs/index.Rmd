@@ -4,20 +4,28 @@ output:
   html_document:
     df_print: paged
 ---
+
+Proyecto realizado
+Arce Gomez Olger Gerardo
+Arce Solorzano Jose Javier
+Calderon Barboza Natalia Maria
+Chacon Padron Jonathan Alonzo
+Chaves Cordero Bryaton Josias
+Vado Morales Aaron Marcelo
+
+# Instalación de librerías
+
 ```{r}
-# install.packages("data.table")
-## install.packages("ggplot2")
-# library(data.table)
-# library(ggplot2)
 library(hms) # Para tratar con tiempos en formato hora:minuto:segundos
 library(dplyr) # Para facilitar la manipulación y operaciones con dataframes
-library(ggpubr)
-library(plotly)
-library(outliers)
+library(ggpubr) # Para graficar
+library(plotly) # Para graficar
+library(outliers) # Para detectar outliers
 library(car)
-library(mclust)
-library(moments)
-library(fitdistrplus) 
+library(mixtools) # Para ajustar mezclas de distribuciones normales
+library(mclust) # Para análisis de conglomerados
+library(moments) # Para tratar con fechas
+library(fitdistrplus) # Para ajuste de distribuciones
 ```
 
 En este cuaderno de R se busca implementar una estimación de la densidad del aire con su incertidumbre en el laboratorio de balanzas del DMQ del LCM. Para esto se cuentan con datos de cuatro años de las condiciones ambientales del laboratorio.
@@ -45,9 +53,10 @@ Una forma sencilla de cargar los datos es por medio de un ```for``` que itere so
 ```{r}
 filedir="Datos/CondicionesAmbientalesBalanzas" # directorio de datos
 años=list.dirs(path = filedir, full.names = TRUE, recursive = TRUE)[2:5] # lista de directorios
-filedir="Datos/CondicionesAmbientalesBalanzas" # directorio de datos
-años=list.dirs(path = filedir, full.names = TRUE, recursive = TRUE)[2:5] # lista de directorios
+```
 
+Este ciclo for recorre los cuatro folders (uno por año), dentro de cada folder itera todos los archivos y carga los datos a un dataframe df.
+```{r}
 for (año in 1:4) {
   filesAnuales=list.files(path = años[año], full.names = TRUE, recursive = TRUE)
     for (file in 1:length(filesAnuales)){
@@ -61,29 +70,36 @@ for (año in 1:4) {
     }
 }
 colnames(df) <- c("Fecha","Hora","Temperatura","°C","Humedad","%","Presión","hPa","Densidad","g/cm3","x","y","z")
+df$Presión <- ifelse(df$hPa == "kPa", df$Presión * 10, df$Presión) #Algunas presiones se reportan en kPa, por lo que se debe convertir la unidad a hPa
+head(df)
+```
 
 
+Al df se le agrega una columna llamada "Horario" usando la función mutate, para diferenciar los datos tomados en horario diurno de los tomados en horario nocturno.
+
+```{r}
 df$Hora <- as_hms(df$Hora)
 df = mutate(df, Horario = if_else(Hora > as_hms("7:59:59") & Hora < as_hms("16:00:00"), "Diurno", "Nocturno"))
+head(df)
 ```
+
 
 # Análisis exploratorio de las magnitudes de interés
 
 Aplique las técnicas más convenientes según su criterio de analista a los datos de las magnitudes de interés.
-
-```{r}
-# Utilice las herramientas que hasta el momento ha aprendido en el curso para analizar la temperatura ambiental, la presión atmosférica y la humedad relativa.
-
-```
+Utilice las herramientas que hasta el momento ha aprendido en el curso para analizar la temperatura ambiental, la presión atmosférica y la humedad relativa.
 
 Primero se separan los datos diurnos y nocturnos.
 
 ```{r}
 df_diurno <- subset(df, Horario == "Diurno")
 df_nocturno <- subset(df, Horario == "Nocturno")
+head(df_diurno)
+head(df_nocturno)
 ```
 
-Para el análisis de temperatura. Primero se realiza el gráfico de cajas.
+## Análisis de temperatura.
+Primero se realiza el gráfico de cajas.
 
 ```{r}
 
@@ -105,7 +121,7 @@ Lower <- quartiles_td[1] - 1.5*IQR_td
 Upper <- quartiles_td[2] + 1.5*IQR_td
 
 tempDOut <- subset(df_diurno$Temperatura, df_diurno$Temperatura > Lower & df_diurno$Temperatura < Upper)
-boxplot(tempDOut, horizontal = T, xlab = "Temperatura en horario diurno")
+boxplot(tempDOut, horizontal = T, xlab = "Temperatura en horario diurno (°C)")
 
 #Para horario nocturno
 quartiles_tn <- quantile(df_nocturno$Temperatura, probs=c(.25, .75), na.rm = FALSE)
@@ -115,36 +131,36 @@ Lower <- quartiles_tn[1] - 1.5*IQR_tn
 Upper <- quartiles_tn[2] + 1.5*IQR_tn
 
 tempNOut <- subset(df_nocturno$Temperatura, df_nocturno$Temperatura > Lower & df_nocturno$Temperatura < Upper)
-boxplot(tempNOut, horizontal = T, xlab = "Temperatura en horario nocturno")
+boxplot(tempNOut, horizontal = T, xlab = "Temperatura en horario nocturno (°C)")
 
 ```
-Se presentan el resumen, medidas de ubicación y medida de dispersión de los datos.
+Se presentan el resumen, las medidas de ubicación y la medida de dispersión de los datos.
 
 ```{r}
 #Diurno
 print("Diurno:")
 summary(tempDOut)
-var(tempDOut) #Varianza
-sd(tempDOut) #Desviación estándar
+var(tempDOut) #Varianza 1.073321
+sd(tempDOut) #Desviación estándar 1.036012
 error_estandar <- sd(tempDOut)/sqrt(length((tempDOut)))
-error_estandar #Calcula el error estándar
+error_estandar #Calcula el error estándar 0.001806404
 cv <- sd(tempDOut)/mean(tempDOut) *100
-cv #Coeficiente de variación.
-skewness(tempDOut) #Asimetría
-kurtosis(tempDOut) #kurtosis
+cv #Coeficiente de variación 5.601279
+skewness(tempDOut) #Asimetría 0.9320083
+kurtosis(tempDOut) #kurtosis 3.013888
 
 #Nocturno
 
 print("Nocturno:")
 summary(tempNOut)
-var(tempNOut) #Varianza
-sd(tempNOut) #Desviación estándar
+var(tempNOut) #Varianza 1.144887
+sd(tempNOut) #Desviación estándar 1.069994
 error_estandar <- sd(tempNOut)/sqrt(length((tempNOut)))
-error_estandar #Calcula el error estándar
+error_estandar #Calcula el error estándar 0.001330254
 cv <- sd(tempNOut)/mean(tempNOut) *100
-cv #Coeficiente de variación.
-skewness(tempNOut) #Asimetría
-kurtosis(tempNOut) #kurtosis
+cv #Coeficiente de variación 5.791215
+skewness(tempNOut) #Asimetría 1.093253
+kurtosis(tempNOut) #kurtosis 3.359415
 
 
 ```
@@ -152,8 +168,8 @@ Se observa que en ambos, la mediana es menos a la media, lo que indica que los d
 
 ```{r}
 par(mfrow = c(1, 2))
-qqPlot(tempDOut, ylab="Temperatura en horario diurno")
-qqPlot(tempNOut, ylab="Temperatura en horario nocturno")
+qqPlot(tempDOut, ylab="Temperatura en horario diurno (°C)")
+qqPlot(tempNOut, ylab="Temperatura en horario nocturno (°C)")
 ```
 Por lo tanto, se descarta la normalidad de los datos para ambas distribuciones.
 
@@ -170,7 +186,7 @@ hist(tempDOut,
      main="",
      prob=T,
      density=20, 
-     xlab="Distribución temperatura en horario diurno", 
+     xlab="Distribución temperatura en horario diurno (°C)", 
      breaks = 100, 
      xlim = c(16.5, 22.5))
 lines(density(tempDOut, bw=0.05), col="blue", lwd=2)
@@ -183,7 +199,7 @@ hist(tempNOut,
      main="",
      prob=T,
      density=20, 
-     xlab="Distribución temperatura en horario nocturno", 
+     xlab="Distribución temperatura en horario nocturno (°C)", 
      breaks = 100, 
      xlim = c(16.5, 22.5))
 lines(density(tempNOut, bw=0.05), col="blue", lwd=2)
@@ -194,7 +210,7 @@ segments(ref_value,0, sup,0, col = "blue",lwd=4)
 De los histogramas se concluyen dos cosas. La primera es que el horario no influye mucho en la distribución, ya que gráficamente esta se ve muy similar para ambos horarios. La segunda es que parece que sigue una distribución bimodal. A continuación se va a estudiar las mediciones de dispersión para un modelo mixto.
 
 ```{r}
-library(mixtools)
+
 #Diurno
 print("Diurno")
 set.seed(2) 
@@ -208,7 +224,7 @@ summary(tempNOut_bi)
 
 Los estadísticos muestran que no hay diferencia amplia entre los horarios diurno y nocturno, por lo que se puede analizar un solo conjunto de datos.
 
-Al estudiar el modelo mixto, con 2 modas, se tiene que una se ubica cerca de 17.81 °C con desviación estándar de 0.34 °C, mientras que la segunda media está cerca de 19.58 °C con desviación estándar de 0.82 °C proximadamente. Esta función no dice si ambas poblaciones se distribuyen normalmente. Gráficamente se concluye que no, porque la cola derecha tiene mucha frecuencia.
+Al estudiar el modelo mixto, con 2 modas, se tiene que una se ubica cerca de 17.81 °C con desviación estándar de 0.34 °C, mientras que la segunda está cerca de 19.58 °C con desviación estándar de 0.82 °C aproximadamente.
 
 Ahora se grafica la ubicación de la dispersión para ambos grupos.
 
@@ -239,7 +255,6 @@ segments(mu.2,0, IC.sup.2,0, col = "blue",lwd=4)
 Para estudiar si ambas modas se distribuyen de forma normal. No se puede utilizar el test de shapiro, ya que tiene más de 5000 datos. Tampoco el de Alderson- Darling, este porque no carga. Se prueba gráficamente con la función mclustBIC.
 
 ```{r}
-library(mclust)
 yBIC = mclustBIC(tempDOut, modelNames="V")
 yModel = mclustModel(tempDOut, yBIC)
 yModel$parameters$mean
@@ -257,9 +272,9 @@ yModel$parameters$variance$sigmasq
 plot(yModel$z[,1],yModel$z[,2], ylab = "Moda 1", xlab = "Moda 2")
 ```
 
-Se concluye que la distribución de la temperatura no depende del nocturno o diurno. La temperatura tiene una tendencia de mayor concentración en 17.81 °C o 19.58 °C, se tiene que analizar las condiciones del laboratorio para determinar mejor cómo separar mejor los datos para mejorar el análisis.
+Se concluye que la distribución de la temperatura no depende del nocturno o diurno. La temperatura tiene una tendencia de mayor concentración en 17.81 °C o 19.58 °C, se tiene que analizar las condiciones del laboratorio para determinar mejor cómo separar mejor los datos para mejorar el análisis, aunque la moda de 17.81 °C presenta una mayor concentración por lo que parece ser un mejor estimado.
 
-Ahora para la presión.
+## Ahora para la presión.
 La presión está reportada en kPa o hPa. Se necesita trabajar en la misma unidad, por lo que se hace la conversión.
 
 ```{r}
@@ -269,10 +284,10 @@ df_nocturno$Presión <- ifelse(df_nocturno$hPa == "kPa", df_nocturno$Presión * 
 Se hace el gráfico de cajas
 
 ```{r}
-{boxplot(df_diurno$Presión, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Presión para horario diurno")
+{boxplot(df_diurno$Presión, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Presión para horario diurno (hPa)")
   axis(1)}
 
-{boxplot(df_nocturno$Presión, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Presión para horario nocturno")
+{boxplot(df_nocturno$Presión, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Presión para horario nocturno (hPa)")
   axis(1)}
 ```
 Los datos atípicos no permiten ver el rango del boxplot. Se eliminan los datos atípicos.
@@ -323,7 +338,7 @@ hist(presDOut,
      prob=T,
      density=20, 
      ylab="Densidad",
-     xlab="Distribución presión en horario diurno", 
+     xlab="Distribución presión en horario diurno (hPa)", 
      breaks = 50)
 lines(density(presDOut, bw=0.2), col="blue", lwd=2)
 points(mediaPD,0, pch=19, col="blue", cex = 2)
@@ -343,7 +358,7 @@ hist(presNOut,
      prob=T,
      density=20, 
      ylab="Densidad",
-     xlab="Distribución presión en horario nocturno", 
+     xlab="Distribución presión en horario nocturno (hPa)", 
      breaks = 50)
 lines(density(presNOut, bw=0.2), col="blue", lwd=2)
 points(mediaPN,0, pch=19, col="blue", cex = 2)
@@ -358,26 +373,26 @@ Algunas medidas de dispersión: varianza, desviación estándar, error estándar
 
 ```{r}
 print("Diurno:")
-var(presDOut) #Varianza
-sd(presDOut) #Desviación estándar
+var(presDOut) #Varianza 2.371224
+sd(presDOut) #Desviación estándar 1.539878
 error_estandar <- sd(presDOut)/sqrt(length((presDOut)))
-error_estandar #Calcula el error estándar
+error_estandar #Calcula el error estándar 0.00269578
 cv <- sd(presDOut)/mean(presDOut) *100
-cv #Coeficiente de variación.
-skewness(presDOut) #Asimetría
-kurtosis(presDOut) #kurtosis
+cv #Coeficiente de variación. 0.175177
+skewness(presDOut) #Asimetría -0.004740656
+kurtosis(presDOut) #kurtosis 2.626822
 
 
 
 print("Nocturno:")
-var(presNOut) #Varianza
-sd(presNOut) #Desviación estándar
+var(presNOut) #Varianza  1.556957
+sd(presNOut) #Desviación estándar 1.247781
 error_estandar <- sd(presNOut)/sqrt(length((presNOut)))
-error_estandar #Calcula el error estándar
+error_estandar #Calcula el error estándar 0.001561894
 cv <- sd(presNOut)/mean(presNOut) *100
-cv #Coeficiente de variación.
-skewness(presNOut) #Asimetría
-kurtosis(presNOut) #kurtosis
+cv #Coeficiente de variación. 0.1419227
+skewness(presNOut) #Asimetría 0.03864687
+kurtosis(presNOut) #kurtosis 2.701369
 
 ```
 
@@ -401,7 +416,8 @@ summary(fit.norm.presD)
 
 Se evidencia que no sigue una distribución normal. Sin embargo, el modelo ajustado sí lo sigue.
 
-Para el análisis de la humedad relativa. Primero se hace el gráfico de cajas.
+## Análisis de la humedad relativa. 
+Primero se hace el gráfico de cajas.
 
 ```{r}
 {boxplot(df_diurno$Humedad, col= "light gray", horizontal=TRUE, axes=FALSE, xlab="Humedad relativa para horario diurno (%)")
@@ -463,7 +479,7 @@ hist(humDOut,
      prob=T,
      density=20, 
      ylab="Densidad",
-     xlab="Distribución de la humedad relativa en horario diurno", 
+     xlab="Distribución de la humedad relativa en horario diurno (%)", 
      breaks = 50)
 lines(density(humDOut, bw=0.2), col="blue", lwd=2)
 points(mediaHD,0, pch=19, col="blue", cex = 2)
@@ -483,7 +499,7 @@ hist(humNOut,
      prob=T,
      density=20, 
      ylab="Densidad",
-     xlab="Distribución de la humedad relativa en horario nocturno", 
+     xlab="Distribución de la humedad relativa en horario nocturno (%)", 
      breaks = 50)
 lines(density(humNOut, bw=0.2), col="blue", lwd=2)
 points(mediaHN,0, pch=19, col="blue", cex = 2)
@@ -498,26 +514,26 @@ Algunas medidas de dispersión: varianza, desviación estándar, error estándar
 
 ```{r}
 print("Diurno:")
-var(humDOut) #Varianza
-sd(humDOut) #Desviación estándar
+var(humDOut) #Varianza 7.878569
+sd(humDOut) #Desviación estándar 2.806879
 error_estandar <- sd(humDOut)/sqrt(length((humDOut)))
-error_estandar #Calcula el error estándar
+error_estandar #Calcula el error estándar 0.004987913
 cv <- sd(humDOut)/mean(humDOut) *100
-cv #Coeficiente de variación.
-skewness(humDOut) #Asimetría
-kurtosis(humDOut) #kurtosis
+cv #Coeficiente de variación. 4.514889
+skewness(humDOut) #Asimetría -0.04897555
+kurtosis(humDOut) #kurtosis 3.091534
 
 
 
 print("Nocturno:")
-var(humNOut) #Varianza
-sd(humNOut) #Desviación estándar
+var(humNOut) #Varianza 8.120778
+sd(humNOut) #Desviación estándar 2.849698
 error_estandar <- sd(humNOut)/sqrt(length((humNOut)))
-error_estandar #Calcula el error estándar
+error_estandar #Calcula el error estándar 0.003640337
 cv <- sd(humNOut)/mean(humNOut) *100
-cv #Coeficiente de variación.
-skewness(humNOut) #Asimetría
-kurtosis(humNOut) #kurtosis
+cv #Coeficiente de variación. 4.644255
+skewness(humNOut) #Asimetría  0.2116097
+kurtosis(humNOut) #kurtosis 3.179015
 ```
 
 Ahora se hace una prueba de normalidad
@@ -550,7 +566,6 @@ df_2019<- df %>% filter(grepl("9$", Fecha))
 df_2020<- df %>% filter(grepl("0$", Fecha))
 df_2021<- df %>% filter(grepl("1$", Fecha))
 df_2022<- df %>% filter(grepl("2$", Fecha))
-#> summary(subset(df_2019, select = c("Temperatura","Humedad","Presión","Densidad")))
 ```
 
 ##Año 2019
@@ -561,20 +576,20 @@ main_2019=summary(subset(df_2019, select = c("Temperatura","Humedad","Presión",
 tabla_2019=as.matrix(main_2019)
 print(tabla_2019)
 ```
-En esta tabla podemos ver los valores estadisticos mas importantes para las variables mostradas durante el año 2019, los cuales podemos ver mas adelante mediante un boxplot para cada una de estas magnitudes.
+En esta tabla podemos ver los valores estadísticos más importantes para las variables mostradas durante el año 2019, los cuales podemos ver más adelante mediante un boxplot para cada una de estas magnitudes.
 
 ```{r}
 
 par(mfrow = c(2, 2))
-boxplot(df_2019$Densidad, main = "Valores Densidad 2019")
-boxplot(df_2019$Presión, main = "Valores Presion 2019")
-boxplot(df_2019$Humedad, main = "Valores Humedad 2019")
-boxplot(df_2019$Temperatura, main = "Valores Temperatura 2019")
+boxplot(df_2019$Densidad, main = "Valores Densidad 2019 (g/cm^3)")
+boxplot(df_2019$Presión, main = "Valores Presion 2019 (hPa)")
+boxplot(df_2019$Humedad, main = "Valores Humedad 2019 (%)")
+boxplot(df_2019$Temperatura, main = "Valores Temperatura 2019 (°C)")
 
 
 ```
 
-Ahora analizaremos el mismo comportamiento pero utilizando un histograma y ver la distribucion que estos datos toman, como estos datos nos interesa analizar mas a detalle primero se realizara un hitograma para cada magnitud. y posterior una comparativa de todos.
+Ahora analizaremos el mismo comportamiento pero utilizando un histograma y ver la distribucion que estos datos toman, como nos interesa analizar más a detalle primero se realizará un hitograma para cada magnitud. y posterior una comparativa de todos.
 
 ```{r}
 
@@ -600,10 +615,10 @@ fig
 
 ```{r}
 fig= subplot(
-  plot_ly(df_2019, y = ~Densidad, type = "histogram",name="Valores Densidad 2019", orientation = "H"),
-  plot_ly(df_2019, y = ~Presión , type = "histogram",name="Valores Presion 2019", orientation = "H"),
-  plot_ly(df_2019, y = ~Humedad, type = "histogram",name="Valores Humedad 2019", orientation = "H"), 
-  plot_ly(df_2019, y = ~Temperatura, type = "histogram",name="Valores Temperatura 2019", orientation = "H"),
+  plot_ly(df_2019, y = ~Densidad, type = "histogram",name="Valores Densidad 2019 (g/cm^3)", orientation = "H"),
+  plot_ly(df_2019, y = ~Presión , type = "histogram",name="Valores Presion 2019 (hPa)", orientation = "H"),
+  plot_ly(df_2019, y = ~Humedad, type = "histogram",name="Valores Humedad 2019 (%)", orientation = "H"), 
+  plot_ly(df_2019, y = ~Temperatura, type = "histogram",name="Valores Temperatura 2019 (°C)", orientation = "H"),
   nrows = 2,
   margin = 0.05
 ) %>%
@@ -639,10 +654,10 @@ print(tabla_2020)
 
 
 par(mfrow = c(2, 2))
-boxplot(df_2020$Densidad, main = "Valores Densidad 2020")
-boxplot(df_2020$Presión, main = "Valores Presion 2020")
-boxplot(df_2020$Humedad, main = "Valores Humedad 2020")
-boxplot(df_2020$Temperatura, main = "Valores Temperatura 2020")
+boxplot(df_2020$Densidad, main = "Valores Densidad 2020 (g/cm^3)")
+boxplot(df_2020$Presión, main = "Valores Presion 2020 (hPa)")
+boxplot(df_2020$Humedad, main = "Valores Humedad 2020 (%)")
+boxplot(df_2020$Temperatura, main = "Valores Temperatura 2020 (°C)")
 ```
 
 
@@ -671,10 +686,10 @@ fig
 
 ```{r}
 fig= subplot(
-  plot_ly(df_2020, y = ~Densidad, type = "histogram",name="Valores Densidad 2020", orientation = "H"),
-  plot_ly(df_2020, y = ~Presión , type = "histogram",name="Valores Presion 2020", orientation = "H"),
-  plot_ly(df_2020, y = ~Humedad, type = "histogram",name="Valores Humedad 2020", orientation = "H"), 
-  plot_ly(df_2020, y = ~Temperatura, type = "histogram",name="Valores Temperatura 2020", orientation = "H"),
+  plot_ly(df_2020, y = ~Densidad, type = "histogram",name="Valores Densidad 2020 (g/cm^3)", orientation = "H"),
+  plot_ly(df_2020, y = ~Presión , type = "histogram",name="Valores Presion 2020 (hPa)", orientation = "H"),
+  plot_ly(df_2020, y = ~Humedad, type = "histogram",name="Valores Humedad 2020 (%)", orientation = "H"), 
+  plot_ly(df_2020, y = ~Temperatura, type = "histogram",name="Valores Temperatura 2020 (°C)", orientation = "H"),
   nrows = 2,
   margin = 0.05
 ) %>%
@@ -699,7 +714,7 @@ ggqqplot(df_2020$Humedad, title = 'Q-Q Plot Humedad en 2020')
 
 
 ```
-A continuacion se hara el mismo procedimiento con los datos para los demas años
+A continuacion se hara el mismo procedimiento con los datos para los demás años
 
 ## Año 2021
 
