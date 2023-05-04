@@ -681,7 +681,7 @@ fig= subplot(
   layout(title = "Comparativa Magnitudes 2020")
 fig
 ```
-Como se pudever en los hitogramas presentados anteriormente, se puede observar que el comportamiento de los datos, exceptuando aquellos de Presion, no poseen un comportamiento que se asemeje a una distribucion normal, esto nos permite inferir que al menos de momento, se puede presentar una distribucion bimodal, la cual es la responsable del comportamiento observado en los datos tomados durante el ano.
+Como se pudever en los histogramas presentados anteriormente, se puede observar que el comportamiento de los datos, exceptuando aquellos de Presion, no poseen un comportamiento que se asemeje a una distribucion normal, esto nos permite inferir que al menos de momento, se puede presentar una distribucion bimodal, la cual es la responsable del comportamiento observado en los datos tomados durante el ano.
 
 Podemos observar esto realizando Q-Q Plots para verificar esto.
 
@@ -699,6 +699,7 @@ ggqqplot(df_2020$Humedad, title = 'Q-Q Plot Humedad en 2020')
 
 
 ```
+A continuacion se hara el mismo procedimiento con los datos para los demas años
 
 ## Año 2021
 
